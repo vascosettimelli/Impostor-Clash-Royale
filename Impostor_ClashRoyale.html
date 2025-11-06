@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Impostor — Clash Royale (versão actualizada)</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;margin:0;background:#0b1020;color:#e6eef8;display:flex;align-items:flex-start;justify-content:center;padding:24px}
+    .card{background:#0f1724;border:1px solid rgba(255,255,255,0.04);padding:18px;border-radius:8px;max-width:900px;width:100%}
+    h1{margin:0 0 12px;font-size:20px}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    label{font-size:13px}
+    input[type=number]{width:68px;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);background:#071029;color:inherit}
+    button{background:#1f8feb;border:none;padding:8px 12px;border-radius:6px;color:white;cursor:pointer}
+    button.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06)}
+    .players{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:14px}
+    .player{background:#071328;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.02);text-align:center}
+    .role{margin-top:8px;padding:8px;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-radius:6px}
+    .hidden{filter:blur(2px);}
+    .footer{margin-top:12px;font-size:13px;color:#bcd9ff}
+    .small{font-size:12px;color:#a7c3e6}
+    textarea{width:100%;height:80px;background:#071029;color:inherit;border:1px solid rgba(255,255,255,0.04);padding:8px;border-radius:6px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>The Impostor — Clash Royale</h1>
+    <div class="controls">
+      <div>
+        <label>Quantidade de jogadores (4–15)</label><br>
+        <input id="numPlayers" type="number" min="4" max="15" value="6">
+      </div>
+      <div>
+        <label>Quantidade de impostores (0–2)</label><br>
+        <input id="numImpostors" type="number" min="0" max="2" value="1">
+      </div>
+      <div style="align-self:end">
+        <button id="startBtn">Iniciar jogo</button>
+        <button id="resetBtn" class="secondary">Reiniciar</button>
+      </div>
+    </div>
+
+    <div class="small">Pool de cartas do Clash Royale (todas as cartas incluídas automaticamente).</div>
+    <textarea id="cardPool" style="display:none"></textarea>
+
+    <div id="playersArea" class="players"></div>
+
+    <div class="footer">
+      <div id="status">Pronto. Ajusta as opções e clica "Iniciar jogo".</div>
+    </div>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const playersArea = document.getElementById('playersArea');
+    const status = document.getElementById('status');
+    const numPlayersInput = document.getElementById('numPlayers');
+    const numImpostorsInput = document.getElementById('numImpostors');
+
+    const allCards = [
+      'Arqueiras','Bárbaros','Gigante','Mago','Mini P.E.K.K.A','Mosqueteira','Valquíria','Feiticeiro','Bruxa','Corredor','Lenhador','Príncipe','Príncipe das Trevas','Cavaleiro','Golem','Golem de Gelo','Dragão Bebé','Dragão Infernal','Mago de Gelo','Mago Eléctrico','Mago de Fogo','Aríete de Batalha','Carrinho de Canhão','Máquina Voadora','Carrinho de Artilharia','Lenhador','Pescador','Bruxa Sombria','Guardiãs','Caçador','Lápide','Torre Infernal','Torre Tesla','Canhão','Fornalha','Cabana de Goblins','Cabana de Bárbaros','Espírito de Gelo','Espírito de Fogo','Espírito Eléctrico','Goblins','Goblins Lanceiros','Goblin Gigante','Goblin com Dardo','Barril de Goblins','Gigante Real','Rei Esqueleto','Rainha Arqueira','Cavaleiro Dourado','Campeão Mineiro','Mega Servo','Servos','Horda de Servos','Exército de Esqueletos','Esqueletos','Bombardeiro','Balão','Morteiro','X-Besta','Três Mosqueteiras','Lançador','Executor','Fantasma Real','Bebé Dragão','Fênix','Fogueira','Foguete','Bola de Fogo','Relâmpago','Veneno','Tornado','Raio','Descarga','Clone','Fúria','Espelho','Barril de Bárbaros','Barril de Esqueletos','Barril de Goblins','Mineiro','Mineiro Bombado','Cemitério','Lava Hound','Balão de Lava','Mega Cavaleiro','Campeão Rei Esqueleto','Rainha Arqueira','Cavaleiro Dourado','Campeão Mineiro','Monge','Mãe Bruxa','Eletrocutadores','Eletrogigante','Gigante Esqueleto','Gigante Elétrico','Carrinho de Canhão','Carrinho de Artilharia','Máquina Voadora','Carrinho de Artilharia','Príncipe das Trevas','Guardiãs','Caçador','Fornalha','Cemitério','Clone','Espelho','Espírito Elétrico','Espírito de Cura','Espírito de Fogo','Espírito de Gelo','Torre Infernal','Torre Tesla','Canhão','Cabana de Bárbaros','Cabana de Goblins'
+    ];
+
+    function shuffle(array){
+      for(let i=array.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [array[i],array[j]]=[array[j],array[i]];
+      }
+    }
+
+    function startGame(){
+      const numPlayers = parseInt(numPlayersInput.value,10);
+      let numImpostors = parseInt(numImpostorsInput.value,10);
+      if(isNaN(numPlayers) || numPlayers<4 || numPlayers>15){ alert('Define um número de jogadores entre 4 e 15.'); return; }
+      if(isNaN(numImpostors) || numImpostors<0) numImpostors=0;
+      if(numImpostors>2) numImpostors=2;
+      if(numImpostors>=numPlayers) numImpostors=1;
+
+      let pool = [...new Set(allCards)];
+      shuffle(pool);
+      const chosenCard = pool[0]; // todos os jogadores têm esta carta
+
+      const indices = [...Array(numPlayers).keys()];
+      shuffle(indices);
+      const impostorIndices = indices.slice(0,numImpostors);
+
+      playersArea.innerHTML='';
+      for(let i=0;i<numPlayers;i++){
+        const div = document.createElement('div');
+        div.className='player';
+        div.innerHTML = `<div><strong>Jogador ${i+1}</strong></div>`;
+
+        const roleDiv = document.createElement('div');
+        roleDiv.className='role hidden';
+        const isImpostor = impostorIndices.indexOf(i)!==-1;
+
+        if(isImpostor){
+          roleDiv.dataset.text = `IMPOSTOR\nNão tens carta!\nFinge saber a carta.`;
+          roleDiv.textContent = 'Clica para ver o teu papel (Impostor)';
+        } else {
+          roleDiv.dataset.text = `PLAYER\nCarta: ${chosenCard}`;
+          roleDiv.textContent = 'Clica para ver o teu papel';
+        }
+
+        roleDiv.addEventListener('click', ()=>{
+          if(roleDiv.classList.contains('hidden')){
+            roleDiv.classList.remove('hidden');
+            roleDiv.textContent = roleDiv.dataset.text;
+          } else {
+            roleDiv.classList.add('hidden');
+            roleDiv.textContent = isImpostor? 'Clica para ver o teu papel (Impostor)' : 'Clica para ver o teu papel';
+          }
+        });
+
+        div.appendChild(roleDiv);
+        playersArea.appendChild(div);
+      }
+
+      status.textContent = `Jogo iniciado com ${numPlayers} jogadores e ${numImpostors} impostor(es). Carta seleccionada: ${chosenCard}. Cada jogador clica na sua caixa para ver o papel.`;
+    }
+
+    startBtn.addEventListener('click', startGame);
+    resetBtn.addEventListener('click', ()=>{
+      playersArea.innerHTML='';
+      status.textContent='Pronto. Ajusta as opções e clica "Iniciar jogo".';
+    });
+  </script>
+</body>
+</html>
