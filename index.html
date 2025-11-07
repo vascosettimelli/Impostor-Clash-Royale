@@ -1,102 +1,205 @@
-<script>
-  const startBtn = document.getElementById('startBtn');
-  const resetBtn = document.getElementById('resetBtn');
-  const playersArea = document.getElementById('playersArea');
-  const status = document.getElementById('status');
-  const numPlayersInput = document.getElementById('numPlayers');
-  const numImpostorsInput = document.getElementById('numImpostors');
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Impostor — Clash Royale (Updated)</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;margin:0;background:#0b1020;color:#e6eef8;display:flex;align-items:flex-start;justify-content:center;padding:24px}
+    .card{background:#0f1724;border:1px solid rgba(255,255,255,0.04);padding:18px;border-radius:8px;max-width:900px;width:100%}
+    h1{margin:0 0 12px;font-size:20px}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    label{font-size:13px}
+    input[type=number]{width:68px;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);background:#071029;color:inherit}
+    button{background:#1f8feb;border:none;padding:8px 12px;border-radius:6px;color:white;cursor:pointer}
+    button.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06)}
+    .players{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:14px}
+    .player{background:#071328;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.02);text-align:center}
+    .role{margin-top:8px;padding:8px;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-radius:6px;cursor:pointer}
+    .hidden{background:#0b1428;color:transparent;text-shadow:0 0 10px rgba(255,255,255,0.05)}
+    .hidden::after{content:"Click to reveal your role";color:#a7c3e6;text-shadow:none}
+    .revealed{color:#e6eef8;background:#0d1b35}
+    .card-image{width:100px;height:auto;margin-top:6px;border-radius:6px}
+    .footer{margin-top:12px;font-size:13px;color:#bcd9ff}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>The Impostor — Clash Royale</h1>
+    <div class="controls">
+      <div>
+        <label>Number of players (4–15)</label><br>
+        <input id="numPlayers" type="number" min="4" max="15" value="6">
+      </div>
+      <div>
+        <label>Number of impostors (0–2)</label><br>
+        <input id="numImpostors" type="number" min="0" max="2" value="1">
+      </div>
+      <div style="align-self:end">
+        <button id="startBtn">Start game</button>
+        <button id="resetBtn" class="secondary">Reset</button>
+      </div>
+    </div>
 
-  function cardImageUrl(slug){
-    return `https://cdn.royaleapi.com/static/img/cards-150/${slug}.png`;
-  }
+    <div id="playersArea" class="players"></div>
 
-  function shuffle(array){
-    for(let i=array.length-1;i>0;i--){
-      const j=Math.floor(Math.random()*(i+1));
-      [array[i],array[j]]=[array[j],array[i]];
+    <div class="footer">
+      <div id="status">Ready. Adjust settings and click "Start game".</div>
+    </div>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const playersArea = document.getElementById('playersArea');
+    const status = document.getElementById('status');
+    const numPlayersInput = document.getElementById('numPlayers');
+    const numImpostorsInput = document.getElementById('numImpostors');
+
+    const allCards = [
+      { name: 'Archers', slug: 'archers' },
+      { name: 'Barbarians', slug: 'barbarians' },
+      { name: 'Giant', slug: 'giant' },
+      { name: 'Mini P.E.K.K.A', slug: 'mini-pekka' },
+      { name: 'Musketeer', slug: 'musketeer' },
+      { name: 'Valkyrie', slug: 'valkyrie' },
+      { name: 'Wizard', slug: 'wizard' },
+      { name: 'Witch', slug: 'witch' },
+      { name: 'Hog Rider', slug: 'hog-rider' },
+      { name: 'Lumberjack', slug: 'lumberjack' },
+      { name: 'Dark Prince', slug: 'dark-prince' },
+      { name: 'Knight', slug: 'knight' },
+      { name: 'Golem', slug: 'golem' },
+      { name: 'Ice Golem', slug: 'ice-golem' },
+      { name: 'Baby Dragon', slug: 'baby-dragon' },
+      { name: 'Inferno Dragon', slug: 'inferno-dragon' },
+      { name: 'Electro Wizard', slug: 'electro-wizard' },
+      { name: 'Battle Ram', slug: 'battle-ram' },
+      { name: 'Cannon Cart', slug: 'cannon-cart' },
+      { name: 'Fisherman', slug: 'fisherman' },
+      { name: 'Mega Minion', slug: 'mega-minion' },
+      { name: 'Royal Giant', slug: 'royal-giant' },
+      { name: 'Skeletons', slug: 'skeletons' },
+      { name: 'Minions', slug: 'minions' },
+      { name: 'Minion Horde', slug: 'minion-horde' },
+      { name: 'P.E.K.K.A', slug: 'pekka' },
+      { name: 'Royal Ghost', slug: 'royal-ghost' },
+      { name: 'Phoenix', slug: 'phoenix' },
+      { name: 'Lightning', slug: 'lightning' },
+      { name: 'Fireball', slug: 'fireball' },
+      { name: 'Zap', slug: 'zap' },
+      { name: 'Poison', slug: 'poison' },
+      { name: 'Freeze', slug: 'freeze' },
+      { name: 'Tornado', slug: 'tornado' },
+      { name: 'Clone', slug: 'clone' },
+      { name: 'Mirror', slug: 'mirror' },
+      { name: 'Graveyard', slug: 'graveyard' },
+      { name: 'Rocket', slug: 'rocket' },
+      { name: 'Log', slug: 'log' },
+      { name: 'Goblin Barrel', slug: 'goblin-barrel' },
+      { name: 'Elixir Golem', slug: 'elixir-golem' },
+      { name: 'Mega Knight', slug: 'mega-knight' },
+      { name: 'Electro Giant', slug: 'electro-giant' },
+      { name: 'Monk', slug: 'monk' },
+      { name: 'Mother Witch', slug: 'mother-witch' },
+      { name: 'Skeleton King', slug: 'skeleton-king' },
+      { name: 'Archer Queen', slug: 'archer-queen' },
+      { name: 'Golden Knight', slug: 'golden-knight' },
+      { name: 'Mighty Miner', slug: 'mighty-miner' }
+    ];
+
+    function cardImageUrl(slug){
+      return `https://cdn.royaleapi.com/static/img/cards-150/${slug}.png`;
     }
-  }
 
-  function startGame(){
-    const numPlayers = parseInt(numPlayersInput.value,10);
-    let numImpostors = parseInt(numImpostorsInput.value,10);
-    if(isNaN(numPlayers) || numPlayers<4 || numPlayers>15){ alert('Set a number of players between 4 and 15.'); return; }
-    if(isNaN(numImpostors) || numImpostors<0) numImpostors=0;
-    if(numImpostors>2) numImpostors=2;
-    if(numImpostors>=numPlayers) numImpostors=1;
+    function shuffle(array){
+      for(let i=array.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [array[i],array[j]]=[array[j],array[i]];
+      }
+    }
 
-    const pool = [...allCards];
-    shuffle(pool);
-    const chosen = pool[0];
+    function startGame(){
+      const numPlayers = parseInt(numPlayersInput.value,10);
+      let numImpostors = parseInt(numImpostorsInput.value,10);
+      if(isNaN(numPlayers) || numPlayers<4 || numPlayers>15){ alert('Set a number of players between 4 and 15.'); return; }
+      if(isNaN(numImpostors) || numImpostors<0) numImpostors=0;
+      if(numImpostors>2) numImpostors=2;
+      if(numImpostors>=numPlayers) numImpostors=1;
 
-    const indices = [...Array(numPlayers).keys()];
-    shuffle(indices);
-    const impostorIndices = indices.slice(0,numImpostors);
+      const pool = [...allCards];
+      shuffle(pool);
+      const chosen = pool[0];
 
-    playersArea.innerHTML='';
-    let currentPlayer = 0;
-    let revealed = false;
+      const indices = [...Array(numPlayers).keys()];
+      shuffle(indices);
+      const impostorIndices = indices.slice(0,numImpostors);
 
-    for(let i=0;i<numPlayers;i++){
-      const div = document.createElement('div');
-      div.className='player';
-      div.innerHTML = `<div><strong>Player ${i+1}</strong></div>`;
+      playersArea.innerHTML='';
+      let currentPlayer = 0;
+      let revealed = false;
 
-      const roleDiv = document.createElement('div');
-      roleDiv.className = 'role hidden';
-      const isImpostor = impostorIndices.includes(i);
+      for(let i=0;i<numPlayers;i++){
+        const div = document.createElement('div');
+        div.className='player';
+        div.innerHTML = `<div><strong>Player ${i+1}</strong></div>`;
 
-      // Clique
-      roleDiv.addEventListener('click', ()=>{
-        if(i !== currentPlayer) return; // só o jogador actual pode clicar
+        const roleDiv = document.createElement('div');
+        roleDiv.className = 'role hidden';
+        const isImpostor = impostorIndices.includes(i);
 
-        if(revealed){
-          // fecha carta
-          roleDiv.classList.add('hidden');
-          roleDiv.classList.remove('revealed');
-          roleDiv.innerHTML = '';
-          revealed = false;
-          currentPlayer++;
-          if(currentPlayer < numPlayers){
-            status.textContent = `Player ${currentPlayer + 1}, it's your turn.`;
-          } else {
-            status.textContent = `All players have seen their roles.`;
+        roleDiv.addEventListener('click', ()=>{
+          if(i !== currentPlayer) return;
+
+          if(revealed){
+            roleDiv.classList.add('hidden');
+            roleDiv.classList.remove('revealed');
+            roleDiv.innerHTML = '';
+            revealed = false;
+            currentPlayer++;
+            if(currentPlayer < numPlayers){
+              status.textContent = `Player ${currentPlayer + 1}, it's your turn.`;
+            } else {
+              status.textContent = `All players have seen their roles.`;
+            }
+            return;
           }
-          return;
-        }
 
-        // mostra papel
-        roleDiv.classList.remove('hidden');
-        roleDiv.classList.add('revealed');
+          roleDiv.classList.remove('hidden');
+          roleDiv.classList.add('revealed');
 
-        if(isImpostor){
-          roleDiv.innerHTML = `<strong>IMPOSTOR</strong><br><small>You have no card. Bluff!</small>`;
-        } else {
-          const img = document.createElement('img');
-          img.className = 'card-image';
-          img.alt = chosen.name;
-          img.src = cardImageUrl(chosen.slug);
-          img.onerror = ()=>{ img.style.display='none'; };
-          roleDiv.innerHTML = `<strong>${chosen.name}</strong>`;
-          roleDiv.appendChild(img);
-        }
+          if(isImpostor){
+            roleDiv.innerHTML = `<strong>IMPOSTOR</strong><br><small>You have no card. Bluff!</small>`;
+          } else {
+            const img = document.createElement('img');
+            img.className = 'card-image';
+            img.alt = chosen.name;
+            img.src = cardImageUrl(chosen.slug);
+            img.onerror = ()=>{ img.style.display='none'; };
+            roleDiv.innerHTML = `<strong>${chosen.name}</strong>`;
+            roleDiv.appendChild(img);
+          }
 
-        revealed = true;
-      });
+          revealed = true;
+        });
 
-      div.appendChild(roleDiv);
-      playersArea.appendChild(div);
+        div.appendChild(roleDiv);
+        playersArea.appendChild(div);
+      }
+
+      status.textContent = `Player 1, it's your turn.`;
     }
 
-    status.textContent = `Player 1, it's your turn.`;
-  }
+    startBtn.addEventListener('click', startGame);
+    resetBtn.addEventListener('click', ()=>{
+      playersArea.innerHTML='';
+      status.textContent='Ready. Adjust settings and click "Start game".';
+    });
+  </script>
+</body>
+</html>
 
-  startBtn.addEventListener('click', startGame);
-  resetBtn.addEventListener('click', ()=>{
-    playersArea.innerHTML='';
-    status.textContent='Ready. Adjust the options and click "Start game".';
-  });
-</script>
+
 
 
 
